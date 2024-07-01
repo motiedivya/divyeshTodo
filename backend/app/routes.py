@@ -13,7 +13,9 @@ def get_todos():
         'id': todo.id,
         'title': todo.title,
         'description': todo.description,
-        'done': todo.done
+        'done': todo.done,
+        'created': todo.created,
+        'edited': todo.edited
     } for todo in todos])
 
 @app.route('/todos', methods=['POST'])
@@ -24,7 +26,15 @@ def add_todo():
     new_todo = TodoItem(title=data['title'], description=data.get('description', ''), user_id=current_user_id)
     db.session.add(new_todo)
     db.session.commit()
-    return jsonify({'message': 'Todo created successfully'}), 201
+    return jsonify({
+        'message': 'Todo created successfully',
+        'id': new_todo.id,
+        'title': new_todo.title,
+        'description': new_todo.description,
+        'done': new_todo.done,
+        'created': new_todo.created,
+        'edited': new_todo.edited
+    }), 201
 
 @app.route('/todos/<int:id>', methods=['PUT'])
 @jwt_required()
@@ -36,7 +46,15 @@ def update_todo(id):
     todo.description = data.get('description', todo.description)
     todo.done = data.get('done', todo.done)
     db.session.commit()
-    return jsonify({'message': 'Todo updated successfully'})
+    return jsonify({
+        'message': 'Todo updated successfully',
+        'id': todo.id,
+        'title': todo.title,
+        'description': todo.description,
+        'done': todo.done,
+        'created': todo.created,
+        'edited': todo.edited
+    })
 
 @app.route('/todos/<int:id>', methods=['DELETE'])
 @jwt_required()

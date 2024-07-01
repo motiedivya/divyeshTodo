@@ -1,11 +1,14 @@
 # app/models.py
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(100), nullable=False)
+    created = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    edited = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -20,6 +23,8 @@ class TodoItem(db.Model):
     done = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_user'), nullable=False)
     user = db.relationship('User', backref=db.backref('todos', lazy=True))
+    created = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
+    edited = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
 class TokenBlacklist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
