@@ -1,8 +1,10 @@
 # app/routes.py
 from flask import request, jsonify, current_app as app
-from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity, get_jwt, JWTManager
 from . import db
-from .models import TodoItem, User
+from .models import TodoItem, User, TokenBlacklist
+
+jwt = JWTManager(app)
 
 @app.route('/todos', methods=['GET'])
 def get_todos():
@@ -45,26 +47,6 @@ def delete_todo(id):
     db.session.commit()
     return jsonify({'message': 'Todo deleted successfully'})
 
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    if not username or not password:
-        return jsonify({'message': 'Username and password are required'}), 400
-
-    existing_user = User.query.filter_by(username=username).first()
-    if existing_user:
-        return jsonify({'message': 'Username already exists'}), 400
-
-    new_user = User(username=username)
-    new_user.set_password(password)
-    db.session.add(new_user)
-    db.session.commit()
-
-    return jsonify({'message': 'User created successfully'}), 201
-
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -78,3 +60,17 @@ def login():
 
     access_token = create_access_token(identity=user.id)
     return jsonify({'access_token': access_token}), 200
+
+@app.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    jti = get_jwt()['jti']
+    db.session.add(TokenBlacklist(jti=jti))
+    db.session.commit()
+    return jsonify({'message': 'User logged out successfully'}), 200
+
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload['jti']
+    token = TokenBlacklist.query.filter_by(jti=jti).first()
+    return token is not None
